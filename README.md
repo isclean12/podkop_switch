@@ -46,10 +46,10 @@ podkop-switch dns
 nano /etc/profile
 
 # Добавьте в конец файла:
-alias pon='podkop-switch on'
-alias poff='podkop-switch off'
-alias pstatus='podkop-switch status'
-alias pdns='podkop-switch dns'
+alias pon='podkop-switch on' 
+alias poff='podkop-switch off' 
+alias pstatus='podkop-switch status' 
+alias pdns='podkop-switch dns' 
 
 # Перезагрузите профиль
 source /etc/profile
@@ -75,16 +75,16 @@ poff     # Выключить Podkop
 
 # Полный список полезных псевдонимов:
 # Основные команды Podkop
-alias pon='podkop-switch on'
-alias poff='podkop-switch off'
-alias pstatus='podkop-switch status'
-alias pdns='podkop-switch dns'
+alias pon='podkop-switch on' 
+alias poff='podkop-switch off' 
+alias pstatus='podkop-switch status' 
+alias pdns='podkop-switch dns' 
 
 # Дополнительные команды
-alias plog='logread | grep podkop'
-alias psinglog='logread | grep sing-box'
-alias pconfig='show_sing_box_config'
-alias pnft='nft list table inet PodkopTable'
+alias plog='logread | grep podkop' 
+alias psinglog='logread | grep sing-box' 
+alias pconfig='show_sing_box_config' 
+alias pnft='nft list table inet PodkopTable' 
 
 # Удаление псевдонимов:
 # Удалить конкретный псевдоним
