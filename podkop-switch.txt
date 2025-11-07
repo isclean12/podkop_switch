@@ -1,0 +1,151 @@
+#!/bin/sh
+
+# Скрипт управления Podkop с сохранением интернета
+# Автор: isclean
+# Версия: 1.0
+
+CONFIG_FILE="/etc/config/podkop"
+RESOLV_FILE="/tmp/resolv.conf.auto"
+BACKUP_RESOLV="/tmp/resolv.conf.backup"
+
+# Функция показа помощи
+show_help() {
+    echo "Использование: podkop-switch [команда]"
+    echo ""
+    echo "Команды:"
+    echo "  on     - Включить Podkop"
+    echo "  off    - Выключить Podkop с сохранением интернета"
+    echo "  status - Показать статус Podkop"
+    echo "  dns    - Показать текущие DNS настройки"
+    echo "  help   - Показать эту справку"
+    echo ""
+    echo "Примеры:"
+    echo "  podkop-switch on    - Включить Podkop"
+    echo "  podkop-switch off   - Выключить Podkop"
+    echo "  podkop-switch status - Статус служб"
+}
+
+# Функция проверки статуса
+check_status() {
+    echo "=== Статус Podkop ==="
+    if /etc/init.d/podkop enabled; then
+        echo "✅ Podkop: включен в автозагрузку"
+    else
+        echo "❌ Podkop: отключен в автозагрузке"
+    fi
+    
+    if /etc/init.d/podkop running; then
+        echo "✅ Podkop: служба запущена"
+    else
+        echo "❌ Podkop: служба остановлена"
+    fi
+    
+    if /etc/init.d/sing-box running; then
+        echo "✅ Sing-box: служба запущена"
+    else
+        echo "❌ Sing-box: служба остановлена"
+    fi
+    
+    echo ""
+    echo "=== DNS серверы ==="
+    cat $RESOLV_FILE 2>/dev/null | grep nameserver
+}
+
+# Функция включения Podkop
+turn_on() {
+    echo "🔄 Включаем Podkop..."
+    
+    # Включаем службы
+    /etc/init.d/podkop start
+    /etc/init.d/sing-box start
+    
+    # Включаем автозагрузку
+    /etc/init.d/podkop enable
+    /etc/init.d/sing-box enable
+    
+    # Ждём запуска
+    sleep 3
+    
+    # Проверяем статус
+    echo "✅ Podkop включен"
+    check_status
+}
+
+# Функция выключения Podkop
+turn_off() {
+    echo "🔄 Выключаем Podkop..."
+    
+    # Создаём резервную копию текущих DNS
+    if [ -f "$RESOLV_FILE" ]; then
+        cp "$RESOLV_FILE" "$BACKUP_RESOLV"
+        echo "📋 Создана резервная копия DNS настроек"
+    fi
+    
+    # Устанавливаем рабочие DNS серверы
+    echo "nameserver 8.8.8.8" > "$RESOLV_FILE"
+    echo "nameserver 1.1.1.1" >> "$RESOLV_FILE"
+    echo "📡 Установлены внешние DNS серверы"
+    
+    # Выключаем службы
+    /etc/init.d/podkop stop
+    /etc/init.d/sing-box stop
+    
+    # Отключаем автозагрузку
+    /etc/init.d/podkop disable
+    /etc/init.d/sing-box disable
+    
+    # Перезапускаем DNS сервисы
+    /etc/init.d/dnsmasq restart
+    /etc/init.d/odhcpd restart
+    
+    echo "⌛ Ждём восстановления сети..."
+    sleep 5
+    
+    echo "✅ Podkop выключен, интернет должен работать"
+    check_status
+}
+
+# Функция показа DNS
+show_dns() {
+    echo "=== Текущие DNS настройки ==="
+    if [ -f "$RESOLV_FILE" ]; then
+        cat "$RESOLV_FILE"
+    else
+        echo "Файл $RESOLV_FILE не найден"
+    fi
+    
+    echo ""
+    echo "=== Резервная копия DNS ==="
+    if [ -f "$BACKUP_RESOLV" ]; then
+        cat "$BACKUP_RESOLV"
+    else
+        echo "Резервная копия не найдена"
+    fi
+}
+
+# Основной код
+case "$1" in
+    on|enable|start)
+        turn_on
+        ;;
+    off|disable|stop)
+        turn_off
+        ;;
+    status|check)
+        check_status
+        ;;
+    dns|dns-status)
+        show_dns
+        ;;
+    help|--help|-h)
+        show_help
+        ;;
+    *)
+        echo "❌ Неизвестная команда: $1"
+        echo ""
+        show_help
+        exit 1
+        ;;
+esac
+
+exit 0
